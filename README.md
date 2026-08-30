@@ -1,63 +1,118 @@
 # Facebook Foncier Scraper
 
-Apify Actor for scraping Facebook groups focused on **land and property listings in Ouagadougou** (Burkina Faso).
+**Apify Actor** pour scraper les groupes Facebook d’annonces foncières / immobilières à **Ouagadougou** (Burkina Faso).
 
-Built with the official **Apify Python SDK** + Playwright.
+Construit avec le **SDK Apify Python** + **Playwright** (mode mobile).
 
-## Features (roadmap)
+## Fonctionnalités
 
-- Multi-account support (cookies isolation)
-- Proxy support (Apify Proxy or custom residential)
-- Daily / backfill modes
-- Persistent state (seen posts, cooldowns, health)
-- Structured output (dataset)
-- Optional LLM enrichment (OpenAI)
+- Mode mobile (`m.facebook.com`) + fingerprint Android stable par compte
+- Extraction JSON Comet (posts mis en avant + scroll GraphQL)
+- Multi-comptes (`accountId` 1–5, isolation cookies / groupes)
+- Proxy Apify ou custom (résidentiel recommandé)
+- Filtrage regex niveau 1 (candidats fonciers)
+- Output structuré dans le **Dataset** Apify
+- Input schema prêt pour la Console Apify
 
-## Quick start (local)
+## Structure
+
+```text
+facebook-foncier-scraper/
+├── .actor/
+│   ├── actor.json
+│   ├── input_schema.json
+│   └── dataset_schema.json
+├── src/
+│   ├── __main__.py
+│   ├── main.py          # point d’entrée Actor
+│   ├── config.py        # groupes, fingerprints, regex
+│   └── scraper.py       # Playwright + extraction Comet
+├── groups.csv           # liste des groupes cibles
+├── Dockerfile
+└── requirements.txt
+```
+
+## Démarrage rapide (local)
 
 ```bash
-# Install Apify CLI (once)
+# CLI Apify (une fois)
 npm install -g apify-cli
 
-# Clone & enter
 git clone https://github.com/Cheick-Yasine/facebook-foncier-scraper.git
 cd facebook-foncier-scraper
 
-# Install dependencies
 pip install -r requirements.txt
 playwright install chromium
 
-# Run locally
+# Créer un input local
+mkdir -p storage/key_value_stores/default
+cat > storage/key_value_stores/default/INPUT.json << 'EOF'
+{
+  "mode": "daily",
+  "daysBack": 1,
+  "groupLimit": 1,
+  "accountId": "1",
+  "cookies": "[...vos cookies Facebook en JSON...]"
+}
+EOF
+
 apify run
 ```
 
-## Input
+## Input principal
 
-See `.actor/input_schema.json`. Main parameters:
-
-| Field | Description | Default |
+| Champ | Description | Défaut |
 |-------|-------------|--------|
-| `mode` | `daily` or `backfill` | `daily` |
-| `daysBack` | Number of days to look back | `1` |
-| `groupLimit` | Max groups (0 = all) | `0` |
-| `accountId` | Account identifier ("1".."5") | empty |
-| `proxyConfiguration` | Apify Proxy or custom | none |
-| `cookies` | Facebook cookies JSON | required for real runs |
-| `skipLlm` | Skip OpenAI structuring | `false` |
+| `mode` | `daily` ou `backfill` | `daily` |
+| `daysBack` | Jours à remonter | `1` |
+| `groupLimit` | Max groupes (0 = tous) | `0` |
+| `accountId` | Compte "1"…"5" | vide |
+| `cookies` | Cookies FB (JSON array) | **requis** |
+| `proxyConfiguration` | Proxy Apify / custom | aucun |
+| `skipLlm` | (réservé) | `false` |
+
+Les cookies peuvent aussi être fournis via `FB_COOKIES_JSON` ou `FB_COOKIES_JSON_<n>` (env).
+
+## Proxy
+
+**Fortement recommandé** (les IP GitHub Actions / datacenter sont souvent bloquées).
+
+- Via l’input `proxyConfiguration` (Apify Proxy)
+- Ou variables d’env : `PROXY_URL` / `PROXY_URL_1` … `PROXY_URL_5`
+
+Format : `http://user:pass@host:port`
+
+Variables associées (optionnel) :
+- `PROXY_COUNTRY_1=BF` (ou `FR`)
+- `BROWSER_LOCALE_1=fr-FR`
+- `BROWSER_TIMEZONE_1=Africa/Ouagadougou`
 
 ## Output
 
-Results are stored in the default **Dataset**. Schema is defined in `.actor/dataset_schema.json`.
+Chaque item du Dataset contient notamment :
 
-## Status
+- `id`, `groupe_id`, `groupe_nom`, `url`
+- `texte`, `date_publication`, `scrape_le`
+- (champs structurés LLM à venir : prix, surface, quartier…)
 
-🚧 **Skeleton** – The Actor is runnable and produces a sample item.  
-The real Playwright scraper (from `ouaga-foncier-etl`) will be migrated next.
+## Statut
 
-## Related
+| Composant | État |
+|-----------|------|
+| Structure Actor Apify | ✅ |
+| Scraper Playwright mobile | ✅ migré |
+| Extraction Comet + scroll | ✅ |
+| Filtrage foncier regex | ✅ |
+| Multi-comptes + groups.csv | ✅ |
+| Proxy Apify / custom | ✅ |
+| Enrichissement LLM (OpenAI) | ⏳ à brancher |
+| Persistance seen_ids (KV store) | ⏳ à brancher |
+| Écriture PostgreSQL | ⏳ optionnel |
 
-- Previous implementation: [ouaga-foncier-etl](https://github.com/Cheick-Yasine/ouaga-foncier-etl)
+## Repo précédent
 
-## License
+[ouaga-foncier-etl](https://github.com/Cheick-Yasine/ouaga-foncier-etl) – pipeline GitHub Actions d’origine.
 
-Private / educational use.
+## Avertissement
+
+L’automatisation de Facebook contrevient aux CGU de Meta. Utilisez un compte dédié, respectez les données personnelles, et assumez les risques de ban.
