@@ -1,0 +1,66 @@
+{
+  "actorSpecification": 1,
+  "fields": {
+    "id": {
+      "type": "string",
+      "title": "Post ID",
+      "description": "Unique Facebook post identifier"
+    },
+    "groupe_id": {
+      "type": "string",
+      "title": "Group ID"
+    },
+    "groupe_nom": {
+      "type": "string",
+      "title": "Group name"
+    },
+    "url": {
+      "type": "string",
+      "title": "Post URL",
+      "format": "uri"
+    },
+    "texte": {
+      "type": "string",
+      "title": "Post text"
+    },
+    "date_publication": {
+      "type": "string",
+      "title": "Publication date",
+      "format": "date-time"
+    },
+    "date_incertaine": {
+      "type": "boolean",
+      "title": "Date uncertain"
+    },
+    "scrape_le": {
+      "type": "string",
+      "title": "Scraped at",
+      "format": "date-time"
+    },
+    "type_annonce": {
+      "type": "string",
+      "title": "Listing type",
+      "description": "vente / location / autre"
+    },
+    "prix": {
+      "type": "number",
+      "title": "Price"
+    },
+    "devise": {
+      "type": "string",
+      "title": "Currency"
+    },
+    "surface": {
+      "type": "number",
+      "title": "Surface (m²)"
+    },
+    "quartier": {
+      "type": "string",
+      "title": "Neighborhood"
+    },
+    "telephone": {
+      "type": "string",
+      "title": "Phone number"
+    }
+  }
+}
