@@ -1,118 +1,109 @@
 # Facebook Foncier Scraper
 
-**Apify Actor** pour scraper les groupes Facebook d’annonces foncières / immobilières à **Ouagadougou** (Burkina Faso).
+Pipeline autonome pour scraper les groupes Facebook d’annonces foncières / immobilières à **Ouagadougou** (Burkina Faso).
 
-Construit avec le **SDK Apify Python** + **Playwright** (mode mobile).
+Inspiré du modèle Actor (input clair → exécution → sortie structurée), **sans** dépendance à Apify.
 
 ## Fonctionnalités
 
 - Mode mobile (`m.facebook.com`) + fingerprint Android stable par compte
 - Extraction JSON Comet (posts mis en avant + scroll GraphQL)
-- Multi-comptes (`accountId` 1–5, isolation cookies / groupes)
-- Proxy Apify ou custom (résidentiel recommandé)
+- Multi-comptes (`accountId` 1–5)
+- Proxy custom (résidentiel recommandé)
 - Filtrage regex niveau 1 (candidats fonciers)
-- Output structuré dans le **Dataset** Apify
-- Input schema prêt pour la Console Apify
+- Sortie JSON dans `data/processed/`
+- CLI simple + fichier d’input JSON optionnel
 
 ## Structure
 
 ```text
 facebook-foncier-scraper/
-├── .actor/
-│   ├── actor.json
-│   ├── input_schema.json
-│   └── dataset_schema.json
 ├── src/
-│   ├── __main__.py
-│   ├── main.py          # point d’entrée Actor
+│   ├── __main__.py      # python -m src
+│   ├── main.py          # CLI / orchestration
 │   ├── config.py        # groupes, fingerprints, regex
 │   └── scraper.py       # Playwright + extraction Comet
-├── groups.csv           # liste des groupes cibles
-├── Dockerfile
+├── groups.csv
+├── input.example.json
 └── requirements.txt
 ```
 
-## Démarrage rapide (local)
+## Installation
 
 ```bash
-# CLI Apify (une fois)
-npm install -g apify-cli
-
 git clone https://github.com/Cheick-Yasine/facebook-foncier-scraper.git
 cd facebook-foncier-scraper
 
 pip install -r requirements.txt
 playwright install chromium
-
-# Créer un input local
-mkdir -p storage/key_value_stores/default
-cat > storage/key_value_stores/default/INPUT.json << 'EOF'
-{
-  "mode": "daily",
-  "daysBack": 1,
-  "groupLimit": 1,
-  "accountId": "1",
-  "cookies": "[...vos cookies Facebook en JSON...]"
-}
-EOF
-
-apify run
 ```
 
-## Input principal
+## Utilisation
 
-| Champ | Description | Défaut |
-|-------|-------------|--------|
-| `mode` | `daily` ou `backfill` | `daily` |
-| `daysBack` | Jours à remonter | `1` |
-| `groupLimit` | Max groupes (0 = tous) | `0` |
-| `accountId` | Compte "1"…"5" | vide |
-| `cookies` | Cookies FB (JSON array) | **requis** |
-| `proxyConfiguration` | Proxy Apify / custom | aucun |
-| `skipLlm` | (réservé) | `false` |
+### Option A – arguments CLI
 
-Les cookies peuvent aussi être fournis via `FB_COOKIES_JSON` ou `FB_COOKIES_JSON_<n>` (env).
+```bash
+python -m src \
+  --cookies-file cookies.json \
+  --group-limit 1 \
+  --days-back 1 \
+  --account 1 \
+  --proxy "http://user:pass@host:port"
+```
 
-## Proxy
+### Option B – fichier d’input (style Actor)
 
-**Fortement recommandé** (les IP GitHub Actions / datacenter sont souvent bloquées).
+```bash
+cp input.example.json input.json
+# Éditer input.json (cookies, proxyUrl, groupLimit…)
 
-- Via l’input `proxyConfiguration` (Apify Proxy)
-- Ou variables d’env : `PROXY_URL` / `PROXY_URL_1` … `PROXY_URL_5`
+python -m src --input input.json
+```
 
-Format : `http://user:pass@host:port`
+### Variables d’environnement (alternative)
 
-Variables associées (optionnel) :
-- `PROXY_COUNTRY_1=BF` (ou `FR`)
-- `BROWSER_LOCALE_1=fr-FR`
-- `BROWSER_TIMEZONE_1=Africa/Ouagadougou`
+```bash
+export FB_COOKIES_JSON='[...]'          # ou FB_COOKIES_JSON_1
+export PROXY_URL='http://user:pass@host:port'
+python -m src --group-limit 1 --account 1
+```
 
-## Output
+## Paramètres principaux
 
-Chaque item du Dataset contient notamment :
+| Paramètre | Description | Défaut |
+|-----------|-------------|--------|
+| `--mode` | `daily` ou `backfill` | `daily` |
+| `--days-back` | Jours à remonter | `1` |
+| `--group-limit` | Max groupes (`0` = tous) | `0` |
+| `--account` | Compte `1`…`5` | vide |
+| `--cookies-file` | Fichier JSON cookies FB | — |
+| `--proxy` | URL proxy | — |
+| `--output-dir` | Dossier de sortie | `data/processed` |
 
-- `id`, `groupe_id`, `groupe_nom`, `url`
-- `texte`, `date_publication`, `scrape_le`
-- (champs structurés LLM à venir : prix, surface, quartier…)
+## Sortie
+
+Fichier JSON horodaté dans `data/processed/annonces_YYYYMMDDTHHMMSSZ.json`.
+
+Chaque objet contient notamment : `id`, `groupe_id`, `groupe_nom`, `url`, `texte`, `date_publication`, `scrape_le`.
 
 ## Statut
 
 | Composant | État |
 |-----------|------|
-| Structure Actor Apify | ✅ |
-| Scraper Playwright mobile | ✅ migré |
+| CLI autonome (sans Apify) | ✅ |
+| Scraper Playwright mobile | ✅ |
 | Extraction Comet + scroll | ✅ |
 | Filtrage foncier regex | ✅ |
 | Multi-comptes + groups.csv | ✅ |
-| Proxy Apify / custom | ✅ |
-| Enrichissement LLM (OpenAI) | ⏳ à brancher |
-| Persistance seen_ids (KV store) | ⏳ à brancher |
-| Écriture PostgreSQL | ⏳ optionnel |
+| Proxy custom | ✅ |
+| Enrichissement LLM | ⏳ |
+| Persistance seen_ids | ⏳ |
+| GitHub Actions / cron | ⏳ |
 
 ## Repo précédent
 
-[ouaga-foncier-etl](https://github.com/Cheick-Yasine/ouaga-foncier-etl) – pipeline GitHub Actions d’origine.
+[ouaga-foncier-etl](https://github.com/Cheick-Yasine/ouaga-foncier-etl)
 
 ## Avertissement
 
-L’automatisation de Facebook contrevient aux CGU de Meta. Utilisez un compte dédié, respectez les données personnelles, et assumez les risques de ban.
+L’automatisation de Facebook contrevient aux CGU de Meta. Compte dédié recommandé.
