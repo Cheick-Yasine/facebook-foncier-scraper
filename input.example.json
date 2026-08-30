@@ -1,0 +1,8 @@
+{
+  "mode": "daily",
+  "daysBack": 1,
+  "groupLimit": 1,
+  "accountId": "1",
+  "proxyUrl": "http://user:pass@host:port",
+  "cookies": "[{\"name\":\"c_user\",\"value\":\"...\",\"domain\":\".facebook.com\"}]"
+}
