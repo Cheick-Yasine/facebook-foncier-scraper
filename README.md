@@ -25,25 +25,35 @@ facebook-foncier-scraper/
 │   └── scraper.py       # Playwright + extraction Comet
 ├── groups.csv
 ├── input.example.json
-└── requirements.txt
+├── pyproject.toml       # deps gérées avec uv
+└── requirements.txt     # miroir optionnel
 ```
 
-## Installation
+## Installation (uv)
+
+Prérequis : [uv](https://docs.astral.sh/uv/) installé.
 
 ```bash
 git clone https://github.com/Cheick-Yasine/facebook-foncier-scraper.git
 cd facebook-foncier-scraper
 
-pip install -r requirements.txt
-playwright install chromium
+# Python 3.12 (évite 3.14 : pas encore de wheels Playwright/greenlet)
+uv python install 3.12
+uv sync --python 3.12
+
+# Navigateur Playwright
+uv run playwright install chromium
 ```
+
+> **Important :** le projet impose `requires-python = ">=3.11,<3.14"`.  
+> Ne pas utiliser Python 3.14 pour l’instant.
 
 ## Utilisation
 
 ### Option A – arguments CLI
 
 ```bash
-python -m src \
+uv run python -m src \
   --cookies-file cookies.json \
   --group-limit 1 \
   --days-back 1 \
@@ -57,7 +67,7 @@ python -m src \
 cp input.example.json input.json
 # Éditer input.json (cookies, proxyUrl, groupLimit…)
 
-python -m src --input input.json
+uv run python -m src --input input.json
 ```
 
 ### Variables d’environnement (alternative)
@@ -65,7 +75,7 @@ python -m src --input input.json
 ```bash
 export FB_COOKIES_JSON='[...]'          # ou FB_COOKIES_JSON_1
 export PROXY_URL='http://user:pass@host:port'
-python -m src --group-limit 1 --account 1
+uv run python -m src --group-limit 1 --account 1
 ```
 
 ## Paramètres principaux
@@ -91,6 +101,7 @@ Chaque objet contient notamment : `id`, `groupe_id`, `groupe_nom`, `url`, `texte
 | Composant | État |
 |-----------|------|
 | CLI autonome (sans Apify) | ✅ |
+| Gestion deps avec uv | ✅ |
 | Scraper Playwright mobile | ✅ |
 | Extraction Comet + scroll | ✅ |
 | Filtrage foncier regex | ✅ |
